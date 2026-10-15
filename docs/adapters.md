@@ -27,7 +27,7 @@ actest run agent-contract.json --command "my-agent --non-interactive" --allow-ex
 ```
 
 Adapter tests should stay provider-neutral when possible. The runner test suite
-uses `tests/fixtures/adapter-conformance/fake-agent.js` as a synthetic adapter:
+uses `tests/fixtures/adapter-conformance/fake-agent.cjs` as a synthetic adapter:
 it reads `AGENT_CONTRACT_PROMPT`, writes only the allowed result file, and avoids
 network calls, credentials, or real agent CLIs. New adapters can reuse the same
 pattern to prove prompt transport and contract verification before exercising a
