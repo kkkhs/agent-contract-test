@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { adapterProcess } from "./adapters.js";
+import { adapterProcess, resolveExecutable } from "./adapters.js";
 import { initializeBaseline } from "./git.js";
 import { verifyContract } from "./verify.js";
 
@@ -49,7 +49,7 @@ function execute(processSpec, cwd, prompt, timeoutMs) {
         env: { ...process.env, AGENT_CONTRACT_PROMPT: prompt },
         stdio: ["pipe", "pipe", "pipe"]
       })
-      : spawn(processSpec.executable, processSpec.args, {
+      : spawn(resolveExecutable(processSpec.executable), processSpec.args, {
       cwd,
       shell: false,
       windowsHide: true,

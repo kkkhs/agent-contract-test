@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runContract } from "../src/runner.js";
-import { adapterProcess, listAdapters } from "../src/adapters.js";
+import { adapterProcess, listAdapters, resolveExecutable } from "../src/adapters.js";
 
 test("runner executes in a disposable copy and verifies the result", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "actest-runner-"));
@@ -106,6 +106,24 @@ require(require("node:path").join(__dirname, "fake-codex.cjs"));
     assert.equal(result.execution.exitCode, 0);
   } finally {
     process.env.PATH = oldPath;
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("windows adapter resolution uses command shims from PATH", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "actest-path-"));
+  const bin = path.join(temporaryRoot, "bin");
+  await fs.mkdir(bin);
+  await fs.writeFile(path.join(bin, "codex.cmd"), "@echo off\r\n");
+
+  try {
+    assert.equal(
+      resolveExecutable("codex", { Path: bin, PATHEXT: ".EXE;.CMD" }, "win32"),
+      path.join(bin, "codex.cmd")
+    );
+    assert.equal(resolveExecutable("codex", { PATH: bin }, "linux"), "codex");
+    assert.equal(resolveExecutable("codex.cmd", { Path: bin }, "win32"), "codex.cmd");
+  } finally {
     await fs.rm(temporaryRoot, { recursive: true, force: true });
   }
 });
