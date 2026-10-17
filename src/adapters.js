@@ -58,15 +58,28 @@ export function resolveExecutable(executable, env = process.env, platform = proc
     for (const extension of extensions) {
       const normalized = extension.startsWith(".") ? extension : `.${extension}`;
       for (const suffix of [normalized, normalized.toLowerCase(), normalized.toUpperCase()]) {
-        const candidate = path.join(directory, `${executable}${suffix}`);
+        const filename = `${executable}${suffix}`;
+        const candidate = path.join(directory, filename);
         if (seen.has(candidate)) continue;
         seen.add(candidate);
-        if (fs.existsSync(candidate)) return candidate;
+        if (fs.existsSync(candidate)) return path.join(directory, actualDirectoryEntry(directory, filename));
       }
     }
   }
 
   return executable;
+}
+
+function actualDirectoryEntry(directory, filename) {
+  try {
+    const exact = fs.readdirSync(directory).find((entry) => entry === filename);
+    if (exact) return exact;
+    const lowerFilename = filename.toLowerCase();
+    const insensitive = fs.readdirSync(directory).find((entry) => entry.toLowerCase() === lowerFilename);
+    return insensitive ?? filename;
+  } catch {
+    return filename;
+  }
 }
 
 function pathValue(env) {

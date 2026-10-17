@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { runContract } from "../src/runner.js";
+import { prepareExecution, runContract } from "../src/runner.js";
 import { adapterProcess, listAdapters, resolveExecutable } from "../src/adapters.js";
 
 test("runner executes in a disposable copy and verifies the result", async () => {
@@ -126,6 +126,26 @@ test("windows adapter resolution uses command shims from PATH", async () => {
   } finally {
     await fs.rm(temporaryRoot, { recursive: true, force: true });
   }
+});
+
+test("windows command shims execute through cmd", () => {
+  const execution = prepareExecution(
+    {
+      executable: "C:\\Tools\\codex.cmd",
+      args: ["exec", "--sandbox", "workspace-write", "--ephemeral", "-"]
+    },
+    "C:\\repo",
+    "Fix it",
+    { ComSpec: "C:\\Windows\\System32\\cmd.exe" },
+    "win32"
+  );
+
+  assert.equal(execution.command, "C:\\Windows\\System32\\cmd.exe");
+  assert.deepEqual(execution.args.slice(0, 3), ["/d", "/s", "/c"]);
+  assert.equal(execution.args[3], "C:\\Tools\\codex.cmd exec --sandbox workspace-write --ephemeral -");
+  assert.equal(execution.options.shell, false);
+  assert.equal(execution.options.windowsVerbatimArguments, true);
+  assert.equal(execution.options.env.AGENT_CONTRACT_PROMPT, "Fix it");
 });
 
 test("built-in adapters use non-interactive edit modes", () => {
